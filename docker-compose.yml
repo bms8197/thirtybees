@@ -17,31 +17,11 @@ services:
         aliases:
           - unbound
 
-  nginx:
-    depends_on:
-      - unbound
-    #build: nginx
-    image: nginx:mainline-alpine
-    command: /bin/sh -c "exec nginx -g 'daemon off;'"
-    ports:
-      - "18080:80"
-      - "18443:443"
-    volumes:
-      - ./www/public:/var/www/default:z
-      - ./config/nginx/:/etc/nginx/conf.d
-      - mysql-socket-vol-1:/var/run/mysqld/:z
-    restart: always
-    dns:
-      - ${IPV4_NETWORK:-172.19.1}.254
-    networks:
-      tb-network:
-        aliases:
-          - nginx
-
   php:
     depends_on:
       - unbound
       - nginx
+    user: "${UID}:${GID}"
     build: php74-fpm
     command: "php-fpm -d date.timezone=${TZ} -d expose_php=0"
     volumes:
@@ -81,6 +61,26 @@ services:
       tb-network:
          aliases:
            - memcached
+
+  nginx:
+    depends_on:
+      - unbound
+    build: nginx
+    command: /bin/sh -c "exec nginx -g 'daemon off;'"
+    ports:
+      - "18080:80"
+      - "18443:443"
+    volumes:
+      - ./www/public:/var/www/default:rw,z
+      - ./config/nginx/:/etc/nginx/conf.d:z
+      - mysql-socket-vol-1:/var/run/mysqld/:z
+    restart: always
+    dns:
+      - ${IPV4_NETWORK:-172.19.1}.254
+    networks:
+      tb-network:
+        aliases:
+          - nginx
 
   phpmyadmin:
     image: phpmyadmin:latest

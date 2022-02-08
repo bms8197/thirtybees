@@ -1,4 +1,5 @@
 FROM php:7.4-fpm
+WORKDIR /var/www/default
 LABEL maintainer="bogdan@898.ro"
 
 # Download script to install PHP extensions and dependencies
@@ -37,7 +38,6 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
     && ln -s $(composer config --global home) /root/composer
 ENV PATH=$PATH:/root/composer/vendor/bin COMPOSER_ALLOW_SUPERUSER=1
 
-# Install prestissimo (composer plugin). Plugin that downloads packages in parallel to speed up the installation process
-# After release of Composer 2.x, remove prestissimo, because parallelism already merged into Composer 2.x branch:
-# https://github.com/composer/composer/pull/7904
-#RUN composer global require hirak/prestissimo
+#RUN apt-get -y install procps
+RUN chown -R www-data:www-data /var/www/default
+
