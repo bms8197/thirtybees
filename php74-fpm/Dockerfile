@@ -1,5 +1,4 @@
 FROM php:7.4-fpm
-WORKDIR /var/www/default
 LABEL maintainer="bogdan@898.ro"
 
 # Download script to install PHP extensions and dependencies
