@@ -1,0 +1,113 @@
+version: '2.1'
+
+services:
+
+  unbound:
+    image: mailcow/unbound:1.15
+    environment:
+      - TZ=${TZ}
+    volumes:
+      #- ./data/hooks/unbound:/hooks:Z
+      - ./config/unbound/unbound.conf:/etc/unbound/unbound.conf:ro,Z
+    restart: always
+    tty: true
+    networks:
+      tb-network:
+        ipv4_address: ${IPV4_NETWORK:-172.19.1}.254
+        aliases:
+          - unbound
+
+  nginx:
+    depends_on:
+      - unbound
+    #build: nginx
+    image: nginx:mainline-alpine
+    command: /bin/sh -c "exec nginx -g 'daemon off;'"
+    ports:
+      - "18080:80"
+      - "18443:443"
+    volumes:
+      - ./www/public:/var/www/default:z
+      - ./config/nginx/:/etc/nginx/conf.d
+      - mysql-socket-vol-1:/var/run/mysqld/:z
+    restart: always
+    dns:
+      - ${IPV4_NETWORK:-172.19.1}.254
+    networks:
+      tb-network:
+        aliases:
+          - nginx
+
+  php:
+    depends_on:
+      - unbound
+      - nginx
+    build: php74-fpm
+    command: "php-fpm -d date.timezone=${TZ} -d expose_php=0"
+    volumes:
+      - ./www/public:/var/www/default:z
+      - mysql-socket-vol-1:/var/run/mysqld/:z
+    dns:
+      - ${IPV4_NETWORK:-172.19.1}.254
+    networks:
+      tb-network:
+         aliases:
+           - php-fpm
+
+  mysql:
+    image: mariadb:latest
+    depends_on:
+      - unbound
+    stop_grace_period: 30s
+    volumes:
+      - mysql-vol-1:/var/lib/mysql/:Z
+      - mysql-socket-vol-1:/var/run/mysqld/:z
+      - ./config/mysql/:/etc/mysql/conf.d/:ro,Z
+    environment:
+      - TZ=${TZ}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_INITDB_SKIP_TZINFO=1
+    networks:
+      tb-network:
+         aliases:
+           - mysql
+
+  memcached:
+    image: memcached:latest
+    networks:
+      tb-network:
+         aliases:
+           - memcached
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    restart: always
+    ports:
+      - '18081:80'
+    networks:
+      tb-network:
+         aliases:
+           - phpmyadmin
+    environment:
+      - MYSQL_USERNAME=${MYSQL_ROOT_USER}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - PMA_HOST=mysql
+
+networks:
+  tb-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: tb-br
+    enable_ipv6: false
+    ipam:
+      driver: default
+      config:
+        - subnet: ${IPV4_NETWORK:-172.19.1}.0/24
+        #- subnet: ${IPV6_NETWORK:-fd4d:6169:6c63:6f77::/64}
+
+volumes:
+  mysql-vol-1:
+  mysql-socket-vol-1:
