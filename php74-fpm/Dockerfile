@@ -2,7 +2,6 @@ FROM php:7.4-fpm
 LABEL maintainer="bogdan@898.ro"
 
 # Download script to install PHP extensions and dependencies
-#ADD https://raw.githubusercontent.com/mlocati/docker-php-extension-installer/master/install-php-extensions /usr/local/bin/
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 
 RUN chmod uga+x /usr/local/bin/install-php-extensions && sync
@@ -38,5 +37,5 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 ENV PATH=$PATH:/root/composer/vendor/bin COMPOSER_ALLOW_SUPERUSER=1
 
 #RUN apt-get -y install procps
-RUN chown -R www-data:www-data /var/www/default
+#RUN chown -R www-data:www-data /var/www/default
 
