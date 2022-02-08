@@ -1,6 +1,8 @@
 FROM php:7.4-fpm
 LABEL maintainer="bogdan@898.ro"
 
+WORKDIR /ops
+
 # Download script to install PHP extensions and dependencies
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 
